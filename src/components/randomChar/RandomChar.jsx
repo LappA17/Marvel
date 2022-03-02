@@ -6,23 +6,24 @@ import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 
 class RandomChar extends Component {
-    constructor(props) {
-        super(props);
-        this.updateChar()
-    }
 
-    /* Как Ваня и говорил у нас появились новые свойства которые мы должны теперь использовать */
     state = {
         char: {},
         loading: true,
-        error: false // Исправим ошибку когда персонаж 404 и ломается страница
-    } /* После того как мы закончили в ErrorMessage у нас сейчас три состояние: загрузка персонажа, загрузка, ошибка */
+        error: false
+    }
     
     marvelService = new MarvelService();
 
-    /* Передаем loading в false, что бы как только у нас загружаются данные, то у нас, то лоудинг будет в фолс автоматом.
-Это легко проговорить словами, если у нас идет загрузка то там где state выше у нас лоудинг стоит в тру, как только данные
-у нас загрузились то лоудинг в фолс  */
+    componentDidMount() {
+        this.updateChar()
+        this.timerId = setInterval(this.updateChar, 3000)
+    }
+
+    componentWillUnmount() {
+        clearInterval(this.timerId)
+    }
+
     onCharLoaded = (char) => {
         this.setState({
             char, 
@@ -30,10 +31,9 @@ class RandomChar extends Component {
         })
     }
 
-    //Метод для устновки ошибки
     onError = () => {
         this.setState({
-            loading: false, // ставив в false потому что если произошла ошибка то нет загрузки
+            loading: false,
             error: true
         })
     }
@@ -43,33 +43,16 @@ class RandomChar extends Component {
         this.marvelService
             .getCharacter(id) 
             .then(this.onCharLoaded)
-            .catch(this.onError)//наша ошибка в onError можем произойти внутри запроса, по этому делаем catch  
+            .catch(this.onError)  
     } 
 
     render() {
-        /* Из-за того что мы создали viem мы можем здесь не вытаскивать все эти данные(name, descr ...) */
         const {char, loading, error} = this.state;
 
-        /* Теперь будем заниматься вычислением нашего состояния, обычно когда нужно писать много условий по состоянию
-компонента то его пишут выше return ! Потому что если будем писать внутри return - будет каша */
-        const errorMessage = error ? <ErrorMessage/> : null // Теперь здесь содержиться либо ошибка либо ничего
-        const spinner = loading ? <Spinner/> : null // Тоже самое делаем со спинером
-        const content = !(loading || error) ? <View char={char}/> : null /* Контент нужно помещать сразу после загрузки, 
-но если нет ошибки, !(loading || error) - и звучит это так - если нет загрузки или нет ошибки */
-/* ПОДВОЖУ ИТОГИ УРОКА: Когда картинка загружается - подставляется спиннер с загрузки, 
-                        Когда контент загрузился - подставляется герой - все нормально,
-                        Когда я сменил одну букву в ключе к моему АПИ - появляется робот с ошибкой */
+        const errorMessage = error ? <ErrorMessage/> : null
+        const spinner = loading ? <Spinner/> : null
+        const content = !(loading || error) ? <View char={char}/> : null 
 
-
-        /*Логика такая - если у нас идет состояние загрузки то мы импортировали компонент Спинера и помещаем в него
-наш скаченный с интернета спинер 
-        if (loading) {
-            return <Spinner/>
-        }  Этот код больше не нужен*/
-/* Если у нас loagind в true то мы подставляем Spinner, а если нет, то подставляем наш View(это обычная верстка которую
-мы просто вырезали в случае логание инета у пользователя что бы он понимал что что-то происходит) и этому View мы
-добавляем ПРОПЕРТИ char {loading ? <Spinner/> : <View char={char}/>} 
-ВСЕ ЧТО Я НАПИСАЛ ВЫШЕ УЖЕ НЕАКТУАЛЬНО ПОТОМУ ЧТО МЫ ВСЕ НАШИ СРАВНЕНИЕ И УСЛОВИЕ НАПИСАЛИ В ПЕРЕМЕННЫЕ*/
         return (
             <div className="randomchar">
                 {errorMessage}
@@ -93,10 +76,6 @@ class RandomChar extends Component {
     }
 }
 
-/*Этот компонент будет отображать кусочек нашей верстки.
-  Это будет простой рендереющий компонент, который получает данные как объект, в нем нет никакой логике, он просто как
-объект получает аргумент с данными, принимает его в себя и возвращает участок какой-то верстки для того что бы просто
-отоброзить. Все главные запросы, приобразование у нас идут в основном компоненте RandomChar */
 const View = ({char}) => {
     const {name, description, thumbnail, homepage, wiki} = char
 

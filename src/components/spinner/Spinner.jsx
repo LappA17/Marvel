@@ -1,7 +1,3 @@
-/* В ИНТЕРНЕТЕ ЕСТЬ КУЧУ РАЗНЫХ САЙТОВ(ВАНЯ К НИМ ПРИКРЕПИЛ ССЫЛКИ) СО СПИНЕРАМИ, КОТОРЫЕ МОЖНО ПРОСТО СКАЧАТЬ
-   МЫ ДОБАВЛЯЕМ СПИННЕР ЧТО БЫ ЕСЛИ ПОЛЬЗОВАТЕЛЬ ЗАШЕЛ НА СТРАНИЧКУ И ЧТО-ТО НЕ ПРОГРУЗИЛОСЬ У НЕГО БЫЛО ПОНИМАНИЕ 
-   ЧТО ПРОИСХОДИТ */
-
    const Spinner = () => {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" style={{margin: '0 auto', background: 'none', display: 'block'}} width="200px" height="200px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
