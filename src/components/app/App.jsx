@@ -6,8 +6,20 @@ import CharInfo from "../charInfo/CharInfo";
 
 import decoration from '../../resources/img/vision.png';
 
-class App extends Component {
+/* Нужно сделать так что бы при клике на одного из 9 персонажей - справа появлялась о нем инфа */
 
+class App extends Component {
+    state = {
+        selectedChar: null
+    }
+
+    // Теперь нам понадобиться метод для установки нашего selectedChar
+    onCharSelected = (id) => {
+        this.setState({
+            selectedChar: id
+        })
+    }
+    /* из onCharSelected id приходит, меняет state и дальше устанавливается в charId  */
    render () {
     return (
         <div className="app">
@@ -15,8 +27,8 @@ class App extends Component {
             <main>
                 <RandomChar/>
                 <div className="char__content">
-                    <CharList/>
-                    <CharInfo/>
+                    <CharList onCharSelected={this.onCharSelected}/>
+                    <CharInfo charId={this.state.selectedChar}/>
                 </div>
                 <img className="bg-decoration" src={decoration} alt="vision"/>
             </main>

@@ -31,6 +31,9 @@ class RandomChar extends Component {
         })
     }
 
+    /* Этот метод запускает loading в true. Что бы использовать между тем когда мы запускаем запросы в работу, когда пользователь нажимает
+try и у нас появлялся спиннер перед появлением нового персонажа. И дальше в методе updateChar - я запускаю этот метод дословно говоря что
+когда у нас запускается обновление нашего персонажа, перед тем как сделать запрос - я поставлю спиннер */
     onCharLoading = () => {
         this.setState({
             loading: true
@@ -48,7 +51,7 @@ class RandomChar extends Component {
         const id = Math.floor(Math.random() * (1011400 - 1011000) + 1011000);
         this.onCharLoading();
         this.marvelService
-            .getAllCharacters(id)
+            .getCharacter(id)
             .then(this.onCharLoaded)
             .catch(this.onError);
     }
@@ -85,9 +88,6 @@ class RandomChar extends Component {
 
 const View = ({char}) => {
     const {name, description, thumbnail, homepage, wiki} = char;
-
-    /* Код ниже нужен для того что бы когда появлялся персонаж без картинки - у него надпись image not found не вылезала
-за длину экрана,а была видна чуть левее центра. Те с кавер меняется на contain */
     let imgStyle = {'objectFit' : 'cover'};
     if (thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg') {
         imgStyle = {'objectFit' : 'contain'};

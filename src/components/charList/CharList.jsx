@@ -43,10 +43,15 @@ class CharList extends Component {
                 imgStyle = {'objectFit' : 'unset'};
             }
             
+/* В СharList - все так же как и в RandomChar только появляется новый флаг key={item.id} который мы достаем из АПИ, потому что у каждого
+персонажа есть свой id и сделали мы это внутри MarvelService. В transformCharacter добавляем id: char.id, т-е мы еще и вытаскивваем айди
+у нашего персонажа */
+            /* Вытскиваем пропсы в onClick={() => this.props.onCharSelected(item.id)}> */
             return (
                 <li 
                     className="char__item"
-                    key={item.id}>
+                    key={item.id}
+                    onClick={() => this.props.onCharSelected(item.id)}>
                         <img src={item.thumbnail} alt={item.name} style={imgStyle}/>
                         <div className="char__name">{item.name}</div>
                 </li>
