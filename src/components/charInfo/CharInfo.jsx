@@ -24,6 +24,11 @@ class CharInfo extends Component {
         }
     }
 
+    /* componentDidCatch(err, info) {
+        console.log(err, info)
+        this.setState({error: true})
+    } Работать не будет, в новом обновление Реакта нужен предохранитель */
+
    updateChar = () => {
       const {charId} = this.props;
       if (!charId) {
@@ -37,6 +42,9 @@ class CharInfo extends Component {
           .getCharacter(charId)
           .then(this.onCharLoaded)
           .catch(this.onError)
+
+      /* Специально допустим ошибку */
+      this.foo.bar = 0;
    }
    
    onCharLoaded = (char) => {
@@ -81,17 +89,11 @@ class CharInfo extends Component {
 const View = ({char}) => {
     const {name, description, thumbnail, homepage, wiki, comics} = char 
 
-    // Ф-ционал что бы картинка была по центру
-    let imgStyle = {'objectFit' : 'cover'}; // сначала создаем объект который будет содержать в формате камелКейс objectFit в cover
-    if (thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg') { //и если thumbnail приходит в формате НУЖНОГО нам изображения
-        imgStyle = {'objectFit' : 'contain'}; //меняем на contain и потом этот стиль применяем к изображению
+    let imgStyle = {'objectFit' : 'cover'};
+    if (thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg') { 
+        imgStyle = {'objectFit' : 'contain'}; 
     }
 
-    /* if (i > 10) return; - если комиксов будет больше 10 то больше их не формировать. Но если предположить что тут будет
-тысячи комиксов тогда лучше такой код не использовать, ведь коллбек функция натыкается на неправдивое значение и останавливается, но
-она все равно перебирает все и тогда это ударить по прозводительности */
-/* {comics.length > 0 ? null : 'There is no comics with this character'} - если у персонажа нет комиксов то мы прям в верстке пишем 
-вот такое */
     return (
         <>
             <div className="char__basics">
