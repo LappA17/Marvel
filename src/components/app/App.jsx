@@ -7,15 +7,6 @@ import ErrorBoundary from "../errorBoundary/ErrorBoundary";
 
 import decoration from '../../resources/img/vision.png';
 
-/* У нас есть CharInfo который постоянно ломается <CharInfo charId={this.state.selectedChar}/> 
-   И мы вместо него помещаем ErrorBoundary
-   А в ErrorBoundary помещаем CharInfo
-   Теперь после нажатие на персонажа выкидывает ошибку от Реакта, но если мы нажмем на крестик то все будет работать
-   
-   НЕ СТОИТ ВСЕ ПОДРЯД ОБОРАЧИВАТЬ(НА ЛИЧНОЕ УСМОТРЕНИЕ, НО ВООБЩЕ КАЖДЫЙ МЕЛКИЙ КОМПОНЕНТ - ТАК ДЕЛАТЬ НЕ НУЖНО)
-   
-   Так же мы обернули CharList и RandomChar в предохранитель, специально сделали ошибку в componentDidMount и 
-заходим на страничку и мы видим два новых робота там где произошла ошибка !*/
 class App extends Component {
     state = {
         selectedChar: null

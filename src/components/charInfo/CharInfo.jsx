@@ -24,11 +24,6 @@ class CharInfo extends Component {
         }
     }
 
-    /* componentDidCatch(err, info) {
-        console.log(err, info)
-        this.setState({error: true})
-    } Работать не будет, в новом обновление Реакта нужен предохранитель */
-
    updateChar = () => {
       const {charId} = this.props;
       if (!charId) {
@@ -42,9 +37,6 @@ class CharInfo extends Component {
           .getCharacter(charId)
           .then(this.onCharLoaded)
           .catch(this.onError)
-
-      /* Специально допустим ошибку */
-      this.foo.bar = 0;
    }
    
    onCharLoaded = (char) => {
