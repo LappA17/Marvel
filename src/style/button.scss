@@ -88,4 +88,7 @@
     &:hover {
         transform: translateY(-5px);
     }
+    &:disabled { // ориентир по псевдоклассу с верстки
+        filter: grayscale(.5) // Когда наша кнопка неактивна
+    }
 }
