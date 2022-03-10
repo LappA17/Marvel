@@ -1,26 +1,26 @@
 import {Component} from 'react';
+import PropTypes from 'prop-types';
+
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 import MarvelService from '../../services/MarvelService';
 import './charList.scss';
-import PropTypes from 'prop-types'; // Импортируем
-
 
 class CharList extends Component {
 
     state = {
         charList: [],
-        loading: true, //Этот лодинг у нас изначально true потому что идет первичная подгрузка первых 9 персонажей которые рендерятся на странице
+        loading: true,
         error: false,
         newItemLoading: false,
-        offset: 210,//После нажатие на кнопку, метод onRequest должен срабатывать и добавлять доп 9 персов
-        charEnded: false//Нужно сделать фционал когда герои закончатся что бы кнопки load more пропала(хотя всего героев 1560)
+        offset: 210,
+        charEnded: false
     }
     
     marvelService = new MarvelService();
 
     componentDidMount() {
-        this.onRequest()
+        this.onRequest();
     }
 
     onRequest = (offset) => {
@@ -36,17 +36,10 @@ class CharList extends Component {
         })
     }
 
-    /* Здесь мы должны сказать что после наш offset(текущий стейт) должен быть увеличен на 9. По этому как текущий стейт задаем {offset, charList}
-    Но когда произойдет первичная отрисовка нашего компонента, то у нас в оффсете будет уже хранится 210 потому что метод onCharListLoaded 
-один раз был вызван */
-    /* Здесь мы будем определять закончились ли персонажи. Мы это будем проверять осталось ли в newCharList меньше чем 9 персонажей, те
-если там осталось к примеру 8 персонажей то больше уже грузить не нужно, герои уже закончились. И после всех этих выеслений мы запишем
-новый стейт который будет удалять нашу кнопку если он в true.
-Мы будем записывать результат в переменную ended и ее уже будем передавать в наш стейт charEnded, если ended будет true то будем удалять нашу кнопку*/
     onCharListLoaded = (newCharList) => {
         let ended = false;
         if (newCharList.length < 9) {
-            ended = true
+            ended = true;
         }
 
         this.setState(({offset, charList}) => ({
@@ -57,7 +50,7 @@ class CharList extends Component {
             charEnded: ended
         }))
     }
-   
+
     onError = () => {
         this.setState({
             error: true,
@@ -65,21 +58,50 @@ class CharList extends Component {
         })
     }
 
+    itemRefs = [];
+
+    setRef = (ref) => {
+        this.itemRefs.push(ref);
+    }
+
+    focusOnItem = (id) => {
+        // Я реализовал вариант чуть сложнее, и с классом и с фокусом
+        // Но в теории можно оставить только фокус, и его в стилях использовать вместо класса
+        // На самом деле, решение с css-классом можно сделать, вынеся персонажа
+        // в отдельный компонент. Но кода будет больше, появится новое состояние
+        // и не факт, что мы выиграем по оптимизации за счет бОльшего кол-ва элементов
+
+        // По возможности, не злоупотребляйте рефами, только в крайних случаях
+        this.itemRefs.forEach(item => item.classList.remove('char__item_selected'));
+        this.itemRefs[id].classList.add('char__item_selected');
+        this.itemRefs[id].focus();
+    }
+
     // Этот метод создан для оптимизации, 
     // чтобы не помещать такую конструкцию в метод render
     renderItems(arr) {
-        const items =  arr.map((item) => {
+        const items =  arr.map((item, i) => {
             let imgStyle = {'objectFit' : 'cover'};
             if (item.thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg') {
                 imgStyle = {'objectFit' : 'unset'};
             }
             
-            /* Вытскиваем пропсы в onClick={() => this.props.onCharSelected(item.id)}> */
             return (
                 <li 
                     className="char__item"
+                    tabIndex={0}
+                    ref={this.setRef}
                     key={item.id}
-                    onClick={() => this.props.onCharSelected(item.id)}>
+                    onClick={() => {
+                        this.props.onCharSelected(item.id);
+                        this.focusOnItem(i);
+                    }}
+                    onKeyPress={(e) => {
+                        if (e.key === ' ' || e.key === "Enter") {
+                            this.props.onCharSelected(item.id);
+                            this.focusOnItem(i);
+                        }
+                    }}>
                         <img src={item.thumbnail} alt={item.name} style={imgStyle}/>
                         <div className="char__name">{item.name}</div>
                 </li>
@@ -95,7 +117,7 @@ class CharList extends Component {
 
     render() {
 
-        const {charList, loading, error, newItemLoading, offset, charEnded} = this.state;
+        const {charList, loading, error, offset, newItemLoading, charEnded} = this.state;
         
         const items = this.renderItems(charList);
 
@@ -103,11 +125,6 @@ class CharList extends Component {
         const spinner = loading ? <Spinner/> : null;
         const content = !(loading || error) ? items : null;
 
-    /* Аттрибут disabled мы будем устанавливать взависимости от нашего свойства newItemLoading(будет либо тру либо фолс)
-       Так же будем навшивать на эту кнопку onClick, запускаем во внутрь фцию и наша функция будет запускаться с методом onRequest с текущим
-стейтом offset. И ВСЕ, ПЕРСОНАЖИ ПОДГРУЖАЮТСЯ 
-    Теперь будем менять стили для кнопки после ее нажатия в style/button */
-    /* Добавим стилей для кнопки в случае если персонажей больше не будет то кнопка должна исчезнуть. Если чарЕндед в тру, то удаляем, если нет то блочный */
         return (
             <div className="char__list">
                 {errorMessage}
@@ -125,7 +142,6 @@ class CharList extends Component {
     }
 }
 
-/* Есть пропс onCharSelected который мы передаем в CharList. Мы его провилидировали что бы что бы он у нас был функцией */
 CharList.propTypes = {
     onCharSelected: PropTypes.func.isRequired
 }
