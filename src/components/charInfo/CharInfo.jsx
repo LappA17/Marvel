@@ -11,10 +11,8 @@ import './charInfo.scss';
 const CharInfo = (props) => {
 
     const [char, setChar] = useState(null);
-    /* const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(false); */
 
-    const {loading, error, getCharacter, clearError} =  useMarvelService();
+    const {loading, error, getCharacter, clearError} = useMarvelService();
 
     useEffect(() => {
         updateChar()
@@ -26,27 +24,14 @@ const CharInfo = (props) => {
             return;
         }
 
-        clearError() //тоже на всякий случай, вдруг будет ошибка, что бы при клике на нового перса ничего не зависало
-        //onCharLoading();
-        //marvelService.
+        clearError();
         getCharacter(charId)
             .then(onCharLoaded)
-            //.catch(onError)
     }
 
     const onCharLoaded = (char) => {
-        //setLoading(false);
         setChar(char);
     }
-
-    /* const onCharLoading = () => {
-        setLoading(true);
-    }
-
-    const onError = () => {
-        setError(true);
-        setLoading(false);
-    } */
 
     const skeleton = char || loading || error ? null : <Skeleton/>;
     const errorMessage = error ? <ErrorMessage/> : null;
