@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
-import MarvelService from '../../services/MarvelService';
+import useMarvelService from '../../services/MarvelService';
 
 import './randomChar.scss';
 import mjolnir from '../../resources/img/mjolnir.png';
 
 const RandomChar = () => {
     const [char, setChar] = useState({})
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(false)
+    /* const [loading, setLoading] = useState(true)
+       const [error, setError] = useState(false) У нас уже есть свои с Хука loading и error*/
 
-    const marvelService = new MarvelService();
+    //const marvelService = useMarvelService(); ТЕПЕРЬ МЫ ПРОСТО ВЫТАСКИВАЕМ НУЖНУЮ НАМ ФЦИЮ getCharacter НИЖЕ В КОДЕ
+    const {loading, error, getCharacter, clearError} = useMarvelService() /*Вместо того кода что выше мы все создали 
+при помощи нашего Хука, если раньше мы создавали стейт для loading и error, то сейчас мы просто все вытаскиваем 
+из нашего Хука */
 
-    // ОБРАТИ ВНИМАНИЕ КАК useEffect поместил в одном коде componentDidMount и componentWillUnmount
     useEffect(() => {
         updateChar();
         const timerId = setInterval(updateChar, 60000);
@@ -22,37 +24,40 @@ const RandomChar = () => {
             clearInterval(timerId)
         }
     }, [])
-    /* componentDidMount() {
-        this.updateChar();
-        // this.timerId = setInterval(this.updateChar, 15000);
-    } 
-    componentWillUnmount() {
-        clearInterval(this.timerId);
-    } */
-
+    
     const onCharLoaded = (char) => {
-        setLoading(false);
+        //setLoading(false); Мы так же удаляем setLoading, потому что он будет контролироваться из Хука
         setChar(char);
     }
 
-    const onCharLoading = () => {
+    /* const onCharLoading = () => {
         setLoading(true);
     }
 
     const onError = () => {
         setError(true);
         setLoading(false);
-    }
+    } Удаляем потому что в нашем http.hook мы создали ровно тоже самое, у нас там тоже есть setError, setLoading и начало
+загрузки мы там тоже обозначали */
 
+/*Функция clearError нам поможет очищать нам Компонент от ошибки, дело в том что в АПИ такое бывает что какой-то id 
+остуствует и если вдруг мы получим на месте персонажа какуе-то ошибку, то сколь бы мы не клацали на кнопку try it, новый
+персонаж у нас появляться не будет, хотя данные и будут грузится, даже в Таймауте если у нас он оставлен включен. 
+  Происходит это потому что в переменную error у нас попадает в наш кастомный хук сообщение с ошибкой, но потом оно
+никак не убирается, ошибка остается навсегда. И здесь нам поможем фция clearError
+  И ВЫЗЫВАЕМ ЭТУ ФУНКЦИЮ ПРЯМ ПЕРЕД ТЕМ КАК МЫ ДЕЛАЕМ КАЖДЫЙ НОВЫЙ ЗАПРОС
+  Теперь при запросе если будет ошибка, то при след нажатие на кнопку try it - она отчиститься */
     const updateChar = () => {
+        clearError()
         const id = Math.floor(Math.random() * (1011400 - 1011000)) + 1011000;
-        onCharLoading();
-        marvelService
-            .getCharacter(id)
+        //onCharLoading(); удаляем, потому что у нас setLoading стоит в самом верху прям в начале запроса в http.hook
+        //marvelService такой переменной больше нет
+        getCharacter(id)
             .then(onCharLoaded)
-            .catch(onError);
+            //.catch(onError); удаляем, потому что все наши ошибки обрабатываются внутри Хука http
     }
 
+    /* Здесь у нас используются переменные erorr и loading, при этом они к нам уже приходят из наших кастомных хуков */
     const errorMessage = error ? <ErrorMessage/> : null;
     const spinner = loading ? <Spinner/> : null;
     const content = !(loading || error || !char) ? <View char={char} /> : null;

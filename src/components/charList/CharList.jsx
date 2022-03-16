@@ -3,108 +3,83 @@ import PropTypes from 'prop-types';
 
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
-import MarvelService from '../../services/MarvelService';
+import useMarvelService from '../../services/MarvelService';
 import './charList.scss';
 
-/* Так как у нас есть Компонент который принимает пропс props.onCharSelected(item.id), то мы передаем как аргумент props - это объект с 
-нашими свойствами*/
 const CharList = (props) => {
     const [charList, setCharList] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(false)
+ /* const [loading, setLoading] = useState(true) ОЧЕНЬ ВАЖНО ОБРАТИ ВНИМАНИЕ ЧТО ЗДЕСЬ ЛОАДИНГ В ТРУ, А В ХУКЕ ФОЛС
+    const [error, setError] = useState(false) уже есть в кастомных хуках */
     const [newItemLoading, setNewItemLoading] = useState(false)
     const [offset, setOffset] = useState(210)
     const [charEnded, setCharEnded] = useState(false)
-    /* state = {
-        charList: [],
-        loading: true,
-        error: false,
-        newItemLoading: false,
-        offset: 210,
-        charEnded: false
-    } */
-    
-    const marvelService = new MarvelService(); // marvelService - объект, который констурируется при помощи класса MarvelService
 
+    //const marvelService = new MarvelService(); потому что getAllCharacters мы уже вытасикваем с useMarvelService() 
+    const {loading, error, getAllCharacters} = useMarvelService(); /* Это идет вызов функции, это значит что когда она будет вызвана, внутри её
+все эти сущности будут создаваться. В том числе на первой стрчоки в useMarvelService у нас есть вызов функции useHttp,
+это значит что внутри useMarvelService у нас будут вызываться еще одна функция.
+    То-есть каждый раз когда мы создаем здесь сервис const marvelService = useMarvelService() в него так же будет приходить
+наш useHttp(самосозданный хук) и каждый раз мы будем создавать новый стейт loading и новый стейт error, который мы сможем
+использовать внутри каждого Компонента 
+    ОБРАТИ ВНИМАНИЕ ЧТО МЫ В useMarvelSerivce ИМПОРТИРОВАЛИ С НАШЕГО httpHook loading и error и мы его нигде там не использовали
+а просто дальше его передали в return {loading, error, getAllCharacters, getCharacter} что бы наш loading дошел он дошел
+до CharList. Те мы прокинули сотояние из нашего http hook через Сервис до конечно CharList*/
+
+    /* Если я сюда в onRequest вторым аргументов передам true, то я скажу коду что это первичная загрузка и это значит что наше свойсвто
+setNewItemLoading так и должно стоять в false. Но если у нас идет повторная загрузка и initial у нас false, то я буду состояние каждый
+раз утсанавливать в true в нашем setNewItemLoading
+    И теперь нужно немного модифицировать вёрстку а именно здесь const spinner = loading ? <Spinner/> : null; Потому что я хочу сказать
+что нам нужно показывать Спинер только тогда когда у нас стоит дейтвительно ТОЛЬКО loading - то состояние внутри Хука http и при этом 
+я хочу сказать что у меня будет НЕ newItemLoading
+*/
     useEffect(() => {
-        onRequest() /* onRequest - у нас стрелочная фция, но мы запускаем ее выше. ДЕЛО В ТОМ ЧТО useEffect ЗАПУСКАЕТСЯ ПОСЛЕ РЕНДЕРА,
-ТО-ЕСТЬ ПОСЛЕ ТОГО КАК НАША ФУНКЦИЯ СУЩЕСТУЕТ УЖЕ ВНУТРИ НАШЕГО КОМПОНЕНТА */
-    }, []) /* Когда пустой массив то функция выполнится только ОДИН РАЗ
-              Так же у нас эта функция меняться не будет, мы туда в массив onRequest не передаем
-              И мы специально вручную оставили пустой массив что бы с эмитировать метод componentDidMount(), а если мы добавим фцию в 
-            зависимость то мы можем запустить бесконечный цикл(потому что мы запустим наш Компонент, он создаться, потом запустит
-            фцию onRequest, у нас будет выполнятся запрос и его успешный вариант в then(onCharListLoaded) он меняет state, когда
-            у нас меняется state то у нас запускается ПЕРЕРЕНДЕРИНГ КОМПОНЕНТА и пойдет все по новой и бесконечный цикл запросов) */
-    /* componentDidMount() {
-        this.onRequest();
-    } */
+        //onRequest()
+        onRequest(offset, true)
+    }, []) 
 
-    const onRequest = (offset) => {
-        onCharListLoading();
-        marvelService.getAllCharacters(offset)
+    /*После того как мы полностью заменили всё в CharList, мы зашли протестить наш сайт, нажимаем на load more, то у нас
+появляется спиннер, нас перебрасывает на начало сайта - это баг, дело в том что в нашем списке персонажей, раньше логика 
+была такая что состояние загрузки раньше было в true, тоже самое было и в RandomChar но там это вообще не критично, и при
+загрузке новых персов у нас изначально показывается спинер загрузки, но потом мы не активировали спинер при загрузке
+новых персонажей, потому что не было смысла, мы просто выключали кнопочку load more, а в http hook у нас загрузка активируется
+всегда перед запросом, у нас setLoading стоит в самом начале request. И за счет этого изменение стейта у нас идет 
+перерисовка Компонента со спинером, те логика работы Компонента и Хука отличаются. И что бы решить эту проблему нужно
+стараться всегда исправлять что-то в Компоненте, потому что Хук - универсальный */
+    // Добавим здесь новый аргумент initial(будем передавать либо true либо false) и от этого значения будем устанавливать setNewItemLoading
+    const onRequest = (offset, initial) => {
+        //Теперь мы будем не всегда вызывать setNewItemLoading с true, а будем ориентироваться на initial
+        initial ? setNewItemLoading(false) : setNewItemLoading(true)
+        //onCharListLoading(); вместо него поместили setNewItemLoading(true)
+        //setNewItemLoading(true) эта жесткая привязка больше не нужна
+        getAllCharacters(offset)
             .then(onCharListLoaded)
-            .catch(onError)
+            //.catch(onError) ошибку уже обработали в кастом хуке
     } 
-    /* onRequest = (offset) => {
-        this.onCharListLoading();
-        this.marvelService.getAllCharacters(offset)
-            .then(this.onCharListLoaded)
-            .catch(this.onError)
-    } */
-
-    const onCharListLoading = () => {
+    
+    /* const onCharListLoading = () => {
         setNewItemLoading(true)
-    }
-    /* onCharListLoading = () => {
-        this.setState({
-            newItemLoading: true
-        })
     } */
-
+   
     const onCharListLoaded = (newCharList) => {
         let ended = false;
         if (newCharList.length < 9) {
             ended = true;
         }
 
-        /* this.setState(({offset, charList}) => ({
-            charList: [...charList, ...newCharList],
-            loading: false,
-            newItemLoading: false,
-            offset: offset + 9,
-            charEnded: ended
-        })) */
-        setCharList(charList => [...charList, ...newCharList]) //С коллбеком что бы была последованность изменение наших стейтов
-        setLoading(loading => false) //здесь можно так же как и в setError просто оставить false без коллбека
+        setCharList(charList => [...charList, ...newCharList])
+        //setLoading(loading => false) уже не используем 
         setNewItemLoading(newItemLoading => false)
         setOffset(offset => offset + 9)
         setCharEnded(charEnded => ended)
     }
 
-    const onError = () => {
-        /* this.setState({
-            error: true,
-            loading: false
-        }) */
-        setError(true) // здесь не важно что было в прошлом стейте, потому что если ошибка то точно нужно true
+    /* const onError = () => {
+        setError(true) 
         setLoading(loading => false)
-    }
+    } это тоже все есть внутри кастом хука*/
 
-    /* useRef можно использовать только НА ВЕРХНЕМ УРОВНЕ КОМПОНЕНТА(НИ В КАКИХ УСЛОВИЯХ, ВНУТРИ ФУНКЦИЯХ ИЛИ ЦИКЛАХ) */
-    //itemRefs = [];
     const itemRefs = useRef([])
-/* Если всмотреть в код, то можно понять что Ваня не использовал никак свойство current у Рефа. Ваня пушил прям на прямую в itemRefs
-а в нем нет свойства current
-   Но когда мы создаем при помощи useRef, то current обязательно будет(потому что будет объект с таким свойством) */
-    /* setRef = (ref) => {
-        this.itemRefs.push(ref);
-    } Так мы уже не сможем поместить ref в нашу верстку. Мы пишем фцию прям внутри ref={} */
 
-    /* itemRefs.current - это значит что у нас в itemRefs лежит вот таком массив, внутри свойство current. ТОЕСТЬ НАШ МАССИВ БУДЕТ СКЛАДЫВАТЬСЯ
-ВО ВНУТРЬ itemRefs.current(свойство объекта). Который я буду перебиратьи дальше у каждого элемента внутри этого массива(это будет 
-ссылка на ДОМ элемент) я буду убирать класс 
-    Дальше внутри этого массива(и мы перемещае id с itemRefs[id].current на itemRefs.current[id]), внутри этого массива ссылок мы находим
-элемент по id и добавляем класс и фокус*/
     const focusOnItem = (id) => {
         // Я реализовал вариант чуть сложнее, и с классом и с фокусом
         // Но в теории можно оставить только фокус, и его в стилях использовать вместо класса
@@ -131,15 +106,10 @@ const CharList = (props) => {
                 <li 
                     className="char__item"
                     tabIndex={0}
-                    ref={el => itemRefs.current[i] = el}/* Здесь будет callback ref который в себя будет принимать элемент на котором он был вызван, а именно li
-А так как у нас чуть выше перебор массива с помощью map, то li у нас создает ВНУТРИ ЦИКЛОВ. По-этому мы задаем ссылку на элемент el - те
-это четкий элемент на котором происходит действие и так как у нас itemsRefs.current - это массив, то мы можем здесь использовать не
-push который может дать ошибку, а itemRefs.current[i] = el то-есть я просто элементы по порядку в этом массиве складываю в itemRefs.current
-и в этом коде itemRefs.current[i] = el el-идет как ссылка на Дом элемент и у нас в этом массиве itemRefs.current будет формироваться массив
-ссылок на элементы которые будут последовательно формироваться  */
+                    ref={el => itemRefs.current[i] = el}
                     key={item.id}
                     onClick={() => {
-                        props.onCharSelected(item.id); // У нас есть Компонент который принимает props
+                        props.onCharSelected(item.id);
                         focusOnItem(i);
                     }}
                     onKeyPress={(e) => {
@@ -153,7 +123,6 @@ push который может дать ошибку, а itemRefs.current[i] = e
                 </li>
             )
         });
-        // А эта конструкция вынесена для центровки спиннера/ошибки
         return (
             <ul className="char__grid">
                 {items}
@@ -161,22 +130,32 @@ push который может дать ошибку, а itemRefs.current[i] = e
         )
     }
 
-    //render() {
-
-        /*У нас эти переменные и так существуют внутри функции по этом удаляем
-        const {charList, loading, error, offset, newItemLoading, charEnded} = this.state; */
-        
         const items = renderItems(charList);
 
         const errorMessage = error ? <ErrorMessage/> : null;
-        const spinner = loading ? <Spinner/> : null;
-        const content = !(loading || error) ? items : null;
+        const spinner = loading && !newItemLoading ? <Spinner/> : null;/*У меня есть загрузка, но при этом это НЕ ЗАГРУЗКА НОВЫХ ПЕРСОВ */
+        //const content = !(loading || error) ? items : null;
+         /*После того как м исправили проблему c setLoading - у нас появилась проблема с тем что при загрузке новых персонажей, они сначало
+удаляются потом появляются. Это частая проблема при работе с Компонентами которые должны что-то подгружать. Происходит это потому что
+состояние наших CharList и loading каждый раз меняются и перерисовывается у нас интерфейс через условие. Здесь мы говорим конкретно
+про эту строчку const content = !(loading || error) ? items : null, когда мы формируем контент. 
+    Потому что в функциональных Компонентах у нас идет каждый раз пересоздание Контента внутри, когда Комопнент обновляется. С Контентом
+у нас происходит тоже самое, он у нас по-этому прыгает. 
+    Когда мы использовали классы, то у нас было свойство класса, которое никогда не пересоздавалось, оно содержало в себе массив данных,
+и в него потом добавлялись эти данные. Здесь же переменная content у нас каждый раз пересоздается, именно по-этому мы видим такое поведение
+    КАК РЕШИТЬ ПРОБЛЕМУ: это всё условие мы добавляли еще скопировав с самого первого нашего Компонента(про случайного персонажа), в
+нём контент статичный, при чем там всего один персонаж, если он не загрузился то мы там ничего и не рендерели. А в текущем Компоненте
+нам это условие совсем не обязательно. Мы можем и пустой блок с классом char__grid помещаеть вместе с ошибкой или спинером и верстка у нас
+не поломается. Но если мы на какой-то момент здесь в верстке помещаем null, то в таком случае у нас и будет прыгать верстка при перерисовке
+По-этому просто удаляем const content = !(loading || error) ? items : null и {content} с верстки */
 
         return (
             <div className="char__list">
                 {errorMessage}
                 {spinner}
-                {content}
+                {/* {content} Вместо контента подставляем items - это как раз те элементы, которые мы отренедерили в функции(те список 
+наших персонажей). И если данных нет, то конечно же и в списке там ничего не будет*/}
+                {items} 
                 <button 
                     className="button button__main button__long"
                     disabled={newItemLoading}

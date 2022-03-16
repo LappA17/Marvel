@@ -34,8 +34,8 @@ const App = () => {
                     </ErrorBoundary>
                     <ErrorBoundary>
                         <CharInfo charId={selectedChar}/>
-                    </ErrorBoundary>
-                </div>
+                    </ErrorBoundary> 
+                </div> 
                 <img className="bg-decoration" src={decoration} alt="vision"/>
             </main>
         </div>
