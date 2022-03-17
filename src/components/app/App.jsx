@@ -1,42 +1,71 @@
-import { useState } from "react";
+/*Прописал npm install react-router-dom --save потому что этот пакет будет работать внутри уже нашего рабочего приложения */
+/*Прописал npm install react-router-dom@5.3.0 потому что этот пакет будет работать внутри уже нашего рабочего приложения */
+
+
+import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
+//Так мы говорим что мы импортируем BrowserRouter, но переименовываем на Router
+//Route - маршрут
+// import { useState } from "react";
+
+import {MainPage, ComicsPage} from '../pages';
 import AppHeader from "../appHeader/AppHeader";
-import RandomChar from "../randomChar/RandomChar";
+
+/* import RandomChar from "../randomChar/RandomChar";
 import CharList from "../charList/CharList";
 import CharInfo from "../charInfo/CharInfo";
-import ComicsList from "../comicsList/ComicsList";
-import AppBanner from "../appBanner/AppBanner";
-import ErrorBoundary from "../errorBoundary/ErrorBoundary";
-
-import decoration from '../../resources/img/vision.png';
+import ErrorBoundary from "../errorBoundary/ErrorBoundary"; Удаляем так как мы разбили код на модули*/
 
 const App = () => {
+
+    /*Можно было сразу MainPage и ComicsPage импортировать в App.jsx, но Ваня сказал что так очень часто делают для того что
+бы если у нас будет очень много страниц то их все содеражть в одном файле и уже его импортировать на App.jsx, что
+бы всё импортировать одной строчкой import {MainPage, ComicsPage} from '../pages'. Так удобно делать когда у нас будет
+очень много страниц */
+
+/* Оборачиваем все в Router. Потому что у нас в AppHeader ссылки, а дальше будут идти страницы, то нужно всю конструкцию
+обернуть в один Рутер. По сути это такой маршрутизатор, который будет получать нужные сигналы от ссылок и показывать
+нужную нам страницу
+    Route - у нас уже будет грузиться если в url адрессе появиться определенная ссылка.
+    Маршрута у нас ДВА: Комиксы и 
+    Дальше с указываем при каких url адрессах будет отслеживаться каждый из маршрутов при помощт path 
+    / - главная страница так обозначается
     
-    const [selectedChar, setChar] = useState(null);
+    Третий Компонент который мы имортируем будет Switch - дело в том в наших приложениях часто необходимо комбинировать
+разные Компоненты, например загрузить главную страницу, но при выборе который сопровождается из другого url, нам необходимо
+подгрузить Компонент с подробрным описанием пользователя и поместить его тоже на главную страницу - это называется Композиция
+    Если мы прям сейчас не используя еще Switch зайдем на страницу, первая буде тработать нормально, но когда мы пропишем /comics
+то у нас одна страница налезит на другую, они как бы скомпилируются. Дело в том что первая страница у нас /, а вторая /comics, те
+библиотека думает что нужно подгрузить к Слешу еще Комиксы, потому что и там и там начало с Слеша. Что бы такого не случалось - нам 
+и есть необходим Компонент Switch 
+    Но в документации сказано, что Switch у нас смотрит на маршруты и рендерит только первый который есть у нас на страничке. 
+То-есть они видит что у нас первый раз совпал / и он всегда грузит главную страницу и он не смотрит что дальше есть какие-то маршруты
+которые используют url со слешом
+    Но мы четко дали команду если есть совпадение то мы рендерим этот Компонент, но Слеш у нас опять входит в /comics, и эта библиотека
+проверяет не на точное сравнение, а есть ли такая часть в строке 
+    Есть решение поставить главную страницу в конец кода, что бы Switch увидел что у нас есть четкое в /comics и загрузил только ту 
+страницу а главная грузится в конец 
 
-    const onCharSelected = (id) => {
-        setChar(id);
-    }
+    Но есть второе решение - это использовать аттрибут exact - этот аттрибут позволяет сказать что только полное сопвпадение пути будет
+рендерить этот компонент
 
+    Теперь заходим в app header для ссылок что бы перекидовали со страницы на страницу
+    Поставили Компоненты Link и аттрибуты to и Теперь при клике на Characters и Comics перекидывает со страницы на страницу*/
     return (
-        <div className="app">
-            <AppHeader/>
-            <main>
-                {/* <ErrorBoundary>
-                    <RandomChar/>
-                </ErrorBoundary>
-                <div className="char__content">
-                    <ErrorBoundary>
-                        <CharList onCharSelected={onCharSelected}/>
-                    </ErrorBoundary>
-                    <ErrorBoundary>
-                        <CharInfo charId={selectedChar}/>
-                    </ErrorBoundary>
-                </div>
-                <img className="bg-decoration" src={decoration} alt="vision"/> */}
-                <AppBanner/>
-                <ComicsList/>
-            </main>
-        </div>
+        <Router>
+            <div className="app">
+                <AppHeader/>
+                <main>
+                    <Switch>
+                        <Route exact path="/">
+                            <MainPage/>
+                        </Route>
+                        <Route exact path="/comics">
+                            <ComicsPage/>
+                        </Route>
+                    </Switch>
+                </main>
+            </div>
+        </Router>
     )
 }
 
