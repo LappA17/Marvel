@@ -10,14 +10,12 @@ import ErrorBoundary from "../errorBoundary/ErrorBoundary";
 import decoration from '../../resources/img/vision.png';
 
 const MainPage = () => {
-    //Так как у нас есть состояние - вырезаем и их
     const [selectedChar, setChar] = useState(null);
 
     const onCharSelected = (id) => {
         setChar(id);
     }
 
-    //Нам понадобиться РеактФрагмент потому что у нас будет большой кусок верстки который нечем не обернут
     return (
         <>
             <ErrorBoundary>
