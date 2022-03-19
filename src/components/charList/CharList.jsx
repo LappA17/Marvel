@@ -25,7 +25,15 @@ const CharList = (props) => {
             .then(onCharListLoaded)
     }
 
-    const onCharListLoaded = (newCharList) => {
+    // 2 способ
+    const onCharListLoaded = async (newCharList) => {
+
+        /*Для того что бы вытащить наши функции мы должны воспользоваться асинхронным синатксисом диструктуризации 
+        Асинхроная - потому что когда мы идём к другому файлу, мы не знаем через сколько код нам отдаст наш результат и 
+    мы там получаем Промис именно по этому */
+        /* const {logger, secondLog} = await import('./someFunc')
+        secondLog() */
+
         let ended = false;
         if (newCharList.length < 9) {
             ended = true;
@@ -94,6 +102,22 @@ const CharList = (props) => {
 
     const errorMessage = error ? <ErrorMessage/> : null;
     const spinner = loading && !newItemLoading ? <Spinner/> : null;
+
+    // 1 способ
+    /* if (loading) {
+        import('./someFunc')
+            .then(obj => obj.default())
+            .catch()
+    } */ /* Динамический имопрт всегда возвращает ПРОМИС с объектом модуля
+         obj.logger() - у нас внутри объекта есть logger
+         Когда мы что-то экспортируем из файла, то мы экспортируем объект */
+
+    // 3 способ
+    /* if (loading) {
+        import('./someFunc')
+            .then(obj => obj.default())
+            .catch()
+    } Так будет по дефолту экспортироваться, только функцию нужно так указать export function logger() */
 
     return (
         <div className="char__list">
