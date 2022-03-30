@@ -1,38 +1,23 @@
-import {useState, useEffect, useRef} from 'react';
+import {useState, useEffect, useRef, useMemo} from 'react';
 import PropTypes from 'prop-types';
 import {CSSTransition, TransitionGroup} from 'react-transition-group';
 
 import useMarvelService from '../../services/MarvelService';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
-//import setContent from '../../utils/setContent' так как мы скопировали сетКонтент нам импортировать его уже не надо
-
 
 import './charList.scss';
 
-/* У нас у этого Компонента не существует такого состояние когда он ждёт, потому что оно сразу же проходит. 
-    Когда Компонент ждет у нас это первичный момент когда должен появляться спинер
-    По-этому мы берем Спиннер и подставляем вместо Скелетона 
-    
-    Дальше идет условие с загрузкой, мы либо должны отобразить Спинер, либо мы должны не менять тот Контент который 
-у нас был на странице, что бы он у нас не прыгал постоянно, что бы у нас не рендерился null 
-    И здесь мы будем точно так же отталкиваться от newitemloading
-    по этому мы в loading спросим если у нас это свойсвто будет в true то мы будем рендерить компонент(только мы здесь
-убираем data={data} потому что в этом компоненте данных нет), а если false то грузим Спиннер
-
-    И так как у нас setContent вне Компонент ЧарЛист, то мы вместо data передаем newItemLoading как аргумент в качестве
-состояния */
 const setContent = (process, Component, newItemLoading) => {
     switch(process) {
         case 'waiting':
             return <Spinner/>;
             break;
         case 'loading':
-            return newItemLoading ? <Component/> : <Spinner/>; /* Дословно мы спрашиваем: у нас рендерятся новые элементы
-если да, то мы рендерим компонент(ничего не меняем на странице), если нет - то это первая загрузка и мы рендерим спиннер */
+            return newItemLoading ? <Component/> : <Spinner/>;
             break;
         case 'confirmed':
-            return <Component/>; //это уже момент когда данные полученные и мы рендерим сам Контент
+            return <Component/>;
             break;
         case 'error':
             return <ErrorMessage/>
@@ -42,6 +27,95 @@ const setContent = (process, Component, newItemLoading) => {
     }
 }
 
+/* У нас в проекте есть серьезный баг, когда мы выбирам персонада, он не подсвечивается крассной рамкой что он активный
+и что он сейчас выбран. Только на второй раз по нему срабатывает класс и активность появляется
+    Происходит это потому что наш список персонажей несколько раз перерендеривается при некоторый действиях
+    Мы нажимаем один раз на карточку персонажа, он появляется справа в углу, но не происходит выделения нашего персонажа
+и класса активности
+
+    ЕСЛИ ТЫ НЕ ДОКОНЦА ПОНИМАЕШЬ КОД ТО НУЖНО ПРОСТО ВЫВОДИТЬ ВСЁ В КОНСОЛЬ !
+     function renderItems (arr){
+        console.log('render')
+    У нас происходит рендер впервый раз как персонажи появились на странице потом мы нажимаем на какого-то перса
+и у нас опять происходит рендер если я нажимаю второй раз то рендера уже не происходит и назначается класс активности
+То-есть проблема в том что у нас начинается перерендеринг после первого клика на персонажа
+    
+    {setContent(process, () => renderItems(charList), newItemLoading)}
+    Видим что наш renderItems запускатеся когда у нас рендерится наш Компонент
+    Те если наш renderItems запускается повторно,то логично что все что находится в return(весь наш Компонент) тоже
+перерисовывается. Такое могло бы произойти когда в нашем Компоненте менялся бы какой-то стейт, но когда мы нажимаем на 
+какого-то персонажа то стейт мы никак не меняем. У нас есть метод foucusOnItem, который просто меняет классы у элементов
+но он никак не меняет какой-то стейт, foucusOnItem вызывается при клике на наш элемент
+
+    Другой вариант это что родительский Компонента ЧарЛиста перерисовываетс сам по себе и при этом перерисовывает еще 
+и своих потомков.
+    Заходим в MainPage - потому что он наш родитель
+    Находим <CharList onCharSelected={onCharSelected}/>
+    При клике на какого-то персонажа при помощи этого метода onCharSelected(который там и на странице описан) поднимается
+на вверх уникальный индификатор персонажа и записывается в useState
+    const [selectedChar, setChar] = useState(null);
+    const onCharSelected = (id) => {
+        setChar(id);
+    }
+    которая уже потом передается в другой Компонент в <CharInfo charId={selectedChar}/>
+
+    пропишем console.log('mp') что бы понять ПЕРЕННДЕРИВАЕТСЯ ЛИ НАША СТРАНИЦА МЕЙН ПЕЙДЖ  
+    Теперь mp и render приходят в консоль после первого захода на страничку и после нажатия на персонажа. 
+    ТО-ЕСТЬ НАША СТРАНИЧКА МЕЙН ПЕЙДЖ ТОЖЕ ПЕРЕРЕНДЕРИВАЕТСЯ ! 
+    И ЗА СОБОЙ ПОТЯНУЛА РЕНДЕР НАШЕГО CharList, то-есть вот этой вот нашей части
+    return (
+        <div className="char__list">
+            {setContent(process, () => renderItems(charList), newItemLoading)}
+            <button 
+                disabled={newItemLoading} 
+                style={{'display' : charEnded ? 'none' : 'block'}}
+                className="button button__main button__long"
+                onClick={() => onRequest(offset)}>
+                <div className="inner">load more</div>
+            </button>
+        </div>
+    )
+    К чему Ваня все это ведет, эта статическая часть которая у нас обозначена в качестве верстки
+    <button 
+                disabled={newItemLoading} 
+                style={{'display' : charEnded ? 'none' : 'block'}}
+                className="button button__main button__long"
+                onClick={() => onRequest(offset)}>
+                <div className="inner">load more</div>
+            </button>
+        </div>
+    )
+    она у нас не изменяется, кнопка как была так оно остается. 
+    Но это у нас функции, фциональные Компоненты - это у нас фции. И когда они перерендериваются то часть функций
+которые у нас рассположены в коде, они вызываются повторно, в том числе вот эта вот конструкция 
+{setContent(process, () => renderItems(charList), newItemLoading)} которая формируетс наш контент. 
+    И получается так что за счет того что мы на верх передаем состояние и оно потом идет куда-то в другой Компонент
+мы вызываем повторный вызов этой фции {setContent(process, () => renderItems(charList), newItemLoading)}, а значт
+и повторный вызов списка персонажей(хотя визуально он никак не меняется). Здесь возникает и баг что когда мы
+нажимаем на персонажа - он действительно выбирается, но класс активности у нас был повешен на предыдущий компонент
+который отрендерился до этого, а сейчас он поменялся другим списком и по-этому здесь класс активности не появляется. 
+    Когда мы нажимаем второй раз, то мы выбираем того же персонажа, уникальный индификатор не меняется, значит
+стейт в МейнПейдже тоже не меняется и значит СписокПерсонажей тоже не меняется и мы уже можем добавить класс 
+активности на этот элемент
+    Эту ошибку легко отловить в панеле разработчика, если выбрать список персонажей и нажать на одного то мы знаем
+что ему в верстке добавиться класс активности, но у нас они просто прыгают и ничего не происходит. 
+Так же можно нажать на Components и выбрать Transition - так же само верстка улетит вверх из-за перерндеринга 
+
+    Решение проблемы:
+    Мы знаем что из этой строчки вернётся какой-то результат {setContent(process, () => renderItems(charList), newItemLoading)}
+Эта строка вернет один из Компонентов. При этом мы хотим что бы у нас этот Компонент не перенжеривался между повторными
+рендеренгами из вне, что бы у нас результат работы фции постоянно запоминался и зависил от определенного параметра
+Под это определение у нас подходит один из хуков которые мы должны использовать useMemo
+        const elements = useMemo(() => {
+        return setContent(process, () => renderItems(charList), newItemLoading)
+    })
+    Теперь useMemo запоминает результат работы фции в нашем return(те Компонент который она отрендерила)
+    И ЗДЕСЬ МЫ ТАК ЖЕ ДОЛЖНЫ ПРОПИСАТЬ ЗАВИСИМОСТЬ - ТО-ЕСТЬ ПРИ ИЗМЕНЕНИЕ КАКОГО ПАРАМЕТРА МЫ БУДЕМ ПЕРЕРАССЧИТЫВАТЬ
+ВОТ ЭТУ ВОТ ФУНКЦИЮ. И МЫ ТУДА ПОМЕЩАЕМ process, потому что если у нас будет новая загрузка, то мы должны 
+пересчитать то что будет вот здесь setContent(process, () => renderItems(charList), newItemLoading), потому что
+там могут добавится какие-то новые элементы 
+// eslint-disable-next-line - это строчка дизейбла для других зависимостей в usememo
+  */
 const CharList = (props) => {
 
     const [charList, setCharList] = useState([]);
@@ -49,7 +123,7 @@ const CharList = (props) => {
     const [offset, setOffset] = useState(210);
     const [charEnded, setCharEnded] = useState(false);
     
-    const {loading, error, getAllCharacters, process, setProcess} = useMarvelService();
+    const {getAllCharacters, process, setProcess} = useMarvelService();
 
     useEffect(() => {
         onRequest(offset, true);
@@ -59,7 +133,7 @@ const CharList = (props) => {
         initial ? setnewItemLoading(false) : setnewItemLoading(true);
         getAllCharacters(offset)
             .then(onCharListLoaded)
-            .then(() => setProcess('confirmed')) //логика такая же самая как и в чар инфо
+            .then(() => setProcess('confirmed'))
     }
 
     const onCharListLoaded = async(newCharList) => {
@@ -82,6 +156,7 @@ const CharList = (props) => {
     }
 
     function renderItems (arr){
+        console.log('render')
         const items =  arr.map((item, i) => {
             let imgStyle = {'objectFit' : 'cover'};
             if (item.thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg') {
@@ -120,45 +195,14 @@ const CharList = (props) => {
         )
     }
     
-    //const items = renderItems(charList);
-
-    /* const errorMessage = error ? <ErrorMessage/> : null;
-    const spinner = loading && !newItemLoading ? <Spinner/> : null; */
-
-    /*Здесь нам нужно вторым аргументом в setContent отоброзить Компонент
-    Этот Компонент(у нас это items). 
-    Мы знаем что фциональный Компонент - это фция, которая возвращает нам какие-то Реакт Элементы
-    По-этому как Компонент мы передаем туда фцию, которая вернёт нам набор каких-то Реакт Элементов 
-    В нашем случае это код чуть выше <ul className="char__grid">
-                <TransitionGroup component={null}>
-                    {items} 
-                </TransitionGroup>
-            </ul>
-    Мы вырезаем renderItems и помещаем в фцию, а items полностью убираем
-    То-есть у меня вместо Компонента помещается фция, которая возвращает кусочек верстки реакт элемента которая будет
-использоваться на странице
-    Так же убираем условный рендеринг выше
-    
-    Заходим на страничку, все работает, но у нас опять возникла проблема которая была раньше
-    Опять после нажатие на load more верстка прыгает вверх
-    Дело в том что наш ЧарЛист немножко не такой компонент как другие, у него есть нестандартное поведение по подгрузки
-новых элементов и взавимисоти от этого мы будем формировать верстку. Не зря у нас есть свойство newItemLoading
-    CharList отличный пример того что есть Компоненты, которые выбиваются из общей структуры, здесь немного другая логика
-под которую мы должны записать уникальный setContent
-
-    У нас раньше Спинер рендерился только если шла Загрузка и при этом у нас шла загрузка только впервый раз !newItemLoading
-То-есть когда пользователь отрендерил впервые этот Компонент, в последующее разы у нас загрузка со спинером не шла потому
-что у нас просто дисейблилась кнопка disabled={newItemLoading} 
-    Именно такое поведение мы должны реализовать
-    Мы выходим из CharList и там создадим фцию setContent
-    
-    После того как фцию выше закончили писать - помещаем в сетконте как третий аргумент newItemLoading*/
+    const elements = useMemo(() => {
+        return setContent(process, () => renderItems(charList), newItemLoading)
+        // eslint-disable-next-line 
+    }, [process])
     return (
         <div className="char__list">
-            {/* {errorMessage}
-            {spinner}
-            {items} */}
-            {setContent(process, () => renderItems(charList), newItemLoading)}
+            {/* {setContent(process, () => renderItems(charList), newItemLoading)} */}
+            {elements}
             <button 
                 disabled={newItemLoading} 
                 style={{'display' : charEnded ? 'none' : 'block'}}

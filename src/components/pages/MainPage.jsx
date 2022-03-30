@@ -17,7 +17,7 @@ const MainPage = () => {
         setChar(id);
     }
 
-    /* Теперь всё что мы впишем в title будет отображаться на странице */
+    console.log('mp')
     return (
         <>
             <Helmet>
