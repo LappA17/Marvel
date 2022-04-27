@@ -6,6 +6,8 @@ import CharList from "../charList/CharList";
 import CharInfo from "../charInfo/CharInfo";
 import CharSearchForm from '../charSearchForm/CharSearchForm';
 import ErrorBoundary from "../errorBoundary/ErrorBoundary";
+//import TestComponent from '../testComponent/TestComponents';
+
 
 import decoration from '../../resources/img/vision.png';
 

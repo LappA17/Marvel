@@ -11,14 +11,6 @@ const SingleComicLayout = lazy(() => import('../pages/singleComicLayout/SingleCo
 const SingleCharacterLayout = lazy(() => import('../pages/singleCharacterLayout/SingleCharacterLayout'));
 const SinglePage = lazy(() => import('../pages/SinglePage'));
 
-/* На моменте подключение библиотеки Реакт Хелмет у нас в консоле постоянно начала выскакивать ошибка что 
-componentWillMount устаревший. То-есть этот участок кода - уже старый
-   Дело в том что мы подключали strict mode в своем проекте
-   Так же у нас там есть ошибка из-за CSSTransition. 
-   Эти ошбики только потому что мы использует стороннею библиотеку, это нормально когда есть такие ошибки, можно пытаться
-гуглить что бы их решить
-
-     */
 const App = () => {
     return (
         <Router>
